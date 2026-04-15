@@ -4,13 +4,25 @@ import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
 import { rm } from "node:fs/promises";
+import { execSync } from "node:child_process";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+const workspaceRoot = path.resolve(artifactDir, "../..");
 
 async function buildAll() {
+  // Compile workspace lib packages so their .d.ts outputs exist for TypeScript's
+  // project-reference resolution (they are gitignored and must be generated at build time).
+  console.log("Compiling workspace libs...");
+  execSync("npx tsc --build tsconfig.json", {
+    cwd: workspaceRoot,
+    stdio: "inherit",
+  });
+  console.log("Libs compiled.");
+
+
   const distDir = path.resolve(artifactDir, "dist");
   await rm(distDir, { recursive: true, force: true });
 
