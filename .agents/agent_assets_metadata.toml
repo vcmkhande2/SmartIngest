@@ -1,0 +1,20 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "MGInRHc6MuAGTIFKIWt9X"
+uri = "file://sample-data/midwest_federal_members.csv"
+type = "table"
+title = "Midwest Federal CU — Members CSV (52 records)"
+
+[[outputs]]
+id = "LvQDrHEiWN1hetoBaLCYH"
+uri = "file://sample-data/techworkers_cu_export.csv"
+type = "table"
+title = "TechWorkers CU — Export CSV (53 records)"
+
+[[outputs]]
+id = "_enjeaocxbGEp10r2YIcC"
+uri = "file://artifacts/truestage-databridge/public/TruStage_SmartIngest_DataSpec.xlsx"
+type = "table"
+title = "TruStage SmartIngest — Data Submission Spec"

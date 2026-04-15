@@ -1,0 +1,945 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: TrueStage DataBridge API - AI-powered data ingestion and mapping platform for credit union data onboarding
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: credit-unions
+    description: Credit union management
+  - name: ingestion-jobs
+    description: File ingestion jobs
+  - name: field-mappings
+    description: Field mapping operations
+  - name: data-quality-rules
+    description: Data quality rule management
+  - name: processed-records
+    description: Processed member/account records
+  - name: email-reports
+    description: Email report generation
+  - name: dashboard
+    description: Dashboard summary endpoints
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /credit-unions:
+    get:
+      operationId: listCreditUnions
+      tags: [credit-unions]
+      summary: List all credit unions
+      responses:
+        "200":
+          description: List of credit unions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CreditUnion"
+
+    post:
+      operationId: createCreditUnion
+      tags: [credit-unions]
+      summary: Create a new credit union
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCreditUnionBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditUnion"
+
+  /credit-unions/{id}:
+    get:
+      operationId: getCreditUnion
+      tags: [credit-unions]
+      summary: Get a credit union by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Credit union
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditUnion"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      operationId: updateCreditUnion
+      tags: [credit-unions]
+      summary: Update a credit union
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCreditUnionBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditUnion"
+
+  /ingestion-jobs:
+    get:
+      operationId: listIngestionJobs
+      tags: [ingestion-jobs]
+      summary: List ingestion jobs
+      parameters:
+        - name: creditUnionId
+          in: query
+          required: false
+          schema:
+            type: ["integer", "null"]
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of ingestion jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IngestionJob"
+
+    post:
+      operationId: createIngestionJob
+      tags: [ingestion-jobs]
+      summary: Create a new ingestion job (file upload)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateIngestionJobBody"
+      responses:
+        "201":
+          description: Created ingestion job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionJob"
+
+  /ingestion-jobs/{id}:
+    get:
+      operationId: getIngestionJob
+      tags: [ingestion-jobs]
+      summary: Get an ingestion job by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ingestion job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionJob"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /ingestion-jobs/{id}/process:
+    post:
+      operationId: processIngestionJob
+      tags: [ingestion-jobs]
+      summary: Trigger AI mapping and processing of an ingestion job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Processing started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionJob"
+
+  /ingestion-jobs/{id}/approve-mappings:
+    post:
+      operationId: approveMappings
+      tags: [ingestion-jobs]
+      summary: Approve field mappings and proceed to data quality checks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveMappingsBody"
+      responses:
+        "200":
+          description: Mappings approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionJob"
+
+  /ingestion-jobs/{id}/field-mappings:
+    get:
+      operationId: listFieldMappings
+      tags: [field-mappings]
+      summary: List AI-suggested field mappings for a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Field mappings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FieldMapping"
+
+    put:
+      operationId: updateFieldMappings
+      tags: [field-mappings]
+      summary: Update field mappings (manual override)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFieldMappingsBody"
+      responses:
+        "200":
+          description: Updated mappings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FieldMapping"
+
+  /ingestion-jobs/{id}/records:
+    get:
+      operationId: listIngestionRecords
+      tags: [processed-records]
+      summary: List processed records for an ingestion job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProcessedRecord"
+
+  /ingestion-jobs/{id}/email-report:
+    get:
+      operationId: getEmailReport
+      tags: [email-reports]
+      summary: Get or generate AI email report for rejected records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Email report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailReport"
+
+    post:
+      operationId: sendEmailReport
+      tags: [email-reports]
+      summary: Mark email report as sent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailReportBody"
+      responses:
+        "200":
+          description: Email report sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailReport"
+
+  /data-quality-rules:
+    get:
+      operationId: listDataQualityRules
+      tags: [data-quality-rules]
+      summary: List all data quality rules
+      responses:
+        "200":
+          description: List of data quality rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DataQualityRule"
+
+    post:
+      operationId: createDataQualityRule
+      tags: [data-quality-rules]
+      summary: Create a new data quality rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDataQualityRuleBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataQualityRule"
+
+  /data-quality-rules/{id}:
+    patch:
+      operationId: updateDataQualityRule
+      tags: [data-quality-rules]
+      summary: Update a data quality rule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDataQualityRuleBody"
+      responses:
+        "200":
+          description: Updated rule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataQualityRule"
+
+    delete:
+      operationId: deleteDataQualityRule
+      tags: [data-quality-rules]
+      summary: Delete a data quality rule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /canonical-fields:
+    get:
+      operationId: listCanonicalFields
+      tags: [field-mappings]
+      summary: List TrueStage canonical schema fields
+      responses:
+        "200":
+          description: Canonical fields
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CanonicalField"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get overall platform summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-jobs:
+    get:
+      operationId: getRecentJobs
+      tags: [dashboard]
+      summary: Get recent ingestion jobs across all credit unions
+      responses:
+        "200":
+          description: Recent jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IngestionJob"
+
+  /dashboard/credit-union-stats:
+    get:
+      operationId: getCreditUnionStats
+      tags: [dashboard]
+      summary: Get per-credit-union ingestion stats
+      responses:
+        "200":
+          description: Per-credit-union stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CreditUnionStat"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    CreditUnion:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        contactEmail:
+          type: string
+        contactName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, inactive, onboarding]
+        totalJobsRun:
+          type: integer
+        lastIngestionAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - contactEmail
+        - status
+        - totalJobsRun
+        - createdAt
+        - updatedAt
+
+    CreateCreditUnionBody:
+      type: object
+      properties:
+        name:
+          type: string
+        contactEmail:
+          type: string
+        contactName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, inactive, onboarding]
+      required:
+        - name
+        - contactEmail
+
+    UpdateCreditUnionBody:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        contactName:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+
+    IngestionJob:
+      type: object
+      properties:
+        id:
+          type: integer
+        creditUnionId:
+          type: integer
+        creditUnionName:
+          type: ["string", "null"]
+        fileName:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: ["integer", "null"]
+        status:
+          type: string
+          enum: [uploaded, mapping, mapped, reviewing, processing, completed, failed, partial]
+        totalRecords:
+          type: ["integer", "null"]
+        processedRecords:
+          type: ["integer", "null"]
+        acceptedRecords:
+          type: ["integer", "null"]
+        softErrorRecords:
+          type: ["integer", "null"]
+        hardErrorRecords:
+          type: ["integer", "null"]
+        mappingConfidenceAvg:
+          type: ["number", "null"]
+        errorSummary:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - creditUnionId
+        - fileName
+        - fileType
+        - status
+        - createdAt
+        - updatedAt
+
+    CreateIngestionJobBody:
+      type: object
+      properties:
+        creditUnionId:
+          type: integer
+        fileName:
+          type: string
+        fileType:
+          type: string
+        fileSize:
+          type: ["integer", "null"]
+        fileContent:
+          type: string
+          description: Base64 encoded file content or raw text
+      required:
+        - creditUnionId
+        - fileName
+        - fileType
+        - fileContent
+
+    FieldMapping:
+      type: object
+      properties:
+        id:
+          type: integer
+        ingestionJobId:
+          type: integer
+        sourceField:
+          type: string
+        canonicalField:
+          type: ["string", "null"]
+        canonicalFieldLabel:
+          type: ["string", "null"]
+        confidenceScore:
+          type: number
+          description: 0.0 to 1.0 confidence score
+        aiReasoning:
+          type: ["string", "null"]
+        isApproved:
+          type: boolean
+        isOverridden:
+          type: boolean
+        sampleValues:
+          type: ["string", "null"]
+          description: JSON array of sample values from the source
+        createdAt:
+          type: string
+      required:
+        - id
+        - ingestionJobId
+        - sourceField
+        - confidenceScore
+        - isApproved
+        - isOverridden
+        - createdAt
+
+    UpdateFieldMappingsBody:
+      type: object
+      properties:
+        mappings:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              canonicalField:
+                type: ["string", "null"]
+              isApproved:
+                type: boolean
+            required:
+              - id
+              - isApproved
+      required:
+        - mappings
+
+    ApproveMappingsBody:
+      type: object
+      properties:
+        mappingIds:
+          type: array
+          items:
+            type: integer
+          description: IDs of mappings to approve; if empty, approve all
+      required:
+        - mappingIds
+
+    ProcessedRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        ingestionJobId:
+          type: integer
+        rowNumber:
+          type: integer
+        status:
+          type: string
+          enum: [accepted, soft_error, hard_error]
+        canonicalData:
+          type: ["string", "null"]
+          description: JSON of the mapped canonical fields
+        rawData:
+          type: ["string", "null"]
+          description: JSON of the original raw fields
+        errorDetails:
+          type: ["string", "null"]
+          description: JSON array of error details
+        errorSeverity:
+          type: ["string", "null"]
+          enum: [soft, hard, null]
+        createdAt:
+          type: string
+      required:
+        - id
+        - ingestionJobId
+        - rowNumber
+        - status
+        - createdAt
+
+    DataQualityRule:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        field:
+          type: string
+          description: Canonical field this rule applies to
+        ruleType:
+          type: string
+          enum: [required, format, range, uniqueness, reference]
+        severity:
+          type: string
+          enum: [soft, hard]
+        ruleConfig:
+          type: string
+          description: JSON config for the rule (regex, min/max, allowed values etc.)
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - field
+        - ruleType
+        - severity
+        - isActive
+        - createdAt
+        - updatedAt
+
+    CreateDataQualityRuleBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        field:
+          type: string
+        ruleType:
+          type: string
+          enum: [required, format, range, uniqueness, reference]
+        severity:
+          type: string
+          enum: [soft, hard]
+        ruleConfig:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - name
+        - field
+        - ruleType
+        - severity
+        - ruleConfig
+
+    UpdateDataQualityRuleBody:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        field:
+          type: ["string", "null"]
+        ruleType:
+          type: ["string", "null"]
+        severity:
+          type: ["string", "null"]
+        ruleConfig:
+          type: ["string", "null"]
+        isActive:
+          type: ["boolean", "null"]
+
+    CanonicalField:
+      type: object
+      properties:
+        id:
+          type: integer
+        fieldKey:
+          type: string
+        label:
+          type: string
+        category:
+          type: string
+          description: e.g. member, account, contact, financial
+        dataType:
+          type: string
+          enum: [string, number, date, boolean, email, phone]
+        isRequired:
+          type: boolean
+        description:
+          type: ["string", "null"]
+      required:
+        - id
+        - fieldKey
+        - label
+        - category
+        - dataType
+        - isRequired
+
+    EmailReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        ingestionJobId:
+          type: integer
+        creditUnionName:
+          type: ["string", "null"]
+        recipientEmail:
+          type: string
+        subject:
+          type: string
+        bodyHtml:
+          type: string
+        hardErrorCount:
+          type: integer
+        softErrorCount:
+          type: integer
+        status:
+          type: string
+          enum: [draft, sent]
+        sentAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - ingestionJobId
+        - recipientEmail
+        - subject
+        - bodyHtml
+        - hardErrorCount
+        - softErrorCount
+        - status
+        - createdAt
+
+    SendEmailReportBody:
+      type: object
+      properties:
+        recipientEmail:
+          type: string
+        subject:
+          type: ["string", "null"]
+      required:
+        - recipientEmail
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalCreditUnions:
+          type: integer
+        activeCreditUnions:
+          type: integer
+        totalJobsAllTime:
+          type: integer
+        jobsThisMonth:
+          type: integer
+        avgMappingConfidence:
+          type: number
+        totalRecordsProcessed:
+          type: integer
+        totalRecordsAccepted:
+          type: integer
+        totalHardErrors:
+          type: integer
+        totalSoftErrors:
+          type: integer
+        pendingReview:
+          type: integer
+      required:
+        - totalCreditUnions
+        - activeCreditUnions
+        - totalJobsAllTime
+        - jobsThisMonth
+        - avgMappingConfidence
+        - totalRecordsProcessed
+        - totalRecordsAccepted
+        - totalHardErrors
+        - totalSoftErrors
+        - pendingReview
+
+    CreditUnionStat:
+      type: object
+      properties:
+        creditUnionId:
+          type: integer
+        creditUnionName:
+          type: string
+        totalJobs:
+          type: integer
+        totalRecords:
+          type: integer
+        acceptedRecords:
+          type: integer
+        hardErrors:
+          type: integer
+        softErrors:
+          type: integer
+        lastJobAt:
+          type: ["string", "null"]
+        avgConfidence:
+          type: number
+      required:
+        - creditUnionId
+        - creditUnionName
+        - totalJobs
+        - totalRecords
+        - acceptedRecords
+        - hardErrors
+        - softErrors
+        - avgConfidence
