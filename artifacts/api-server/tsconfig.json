@@ -6,16 +6,5 @@
     "types": ["node"],
     "esModuleInterop": true
   },
-  "include": ["src"],
-  "references": [
-    {
-      "path": "../../lib/db"
-    },
-    {
-      "path": "../../lib/api-zod"
-    },
-    {
-      "path": "../../lib/integrations-openai-ai-server"
-    }
-  ]
+  "include": ["src"]
 }
